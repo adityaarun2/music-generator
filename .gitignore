@@ -8,3 +8,17 @@ logs/
 .vscode/
 .env
 data/tokenized
+# macOS
+.DS_Store
+
+# data & artifacts
+data/
+runs/
+out/
+
+# python
+__pycache__/
+*.pyc
+
+# notebooks
+.ipynb_checkpoints/
