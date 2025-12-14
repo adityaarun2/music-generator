@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
@@ -187,6 +188,16 @@ def _worker_entry(job: Tuple[str, str, str], worker_kwargs: Dict) -> Dict:
     )
 
 
+def _atomic_write_parquet(df: pd.DataFrame, out_path: Path) -> None:
+    """
+    Atomic manifest write: write to temp then rename.
+    Prevents half-written parquet on interrupt / crash.
+    """
+    tmp = out_path.with_suffix(".tmp.parquet")
+    df.to_parquet(tmp, index=False)
+    tmp.replace(out_path)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--index", type=str, default="data/index.parquet")
@@ -200,6 +211,11 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--overwrite", action="store_true")
     ap.add_argument("--num_workers", type=int, default=0)
+
+    # NEW: hardening knobs
+    ap.add_argument("--flush_every", type=int, default=500, help="Write manifest every N results")
+    ap.add_argument("--maxtasksperchild", type=int, default=200, help="Recycle worker after N tasks (mp only)")
+
     args = ap.parse_args()
 
     index_path = Path(args.index)
@@ -273,21 +289,65 @@ def main() -> None:
         overwrite=args.overwrite,
     )
 
+    manifest_path = out_dir / "manifest.parquet"
+
+    # If manifest already exists, resume by loading it and skipping completed midi_path entries
     records: List[Dict] = []
+    done_paths: set[str] = set()
+    if manifest_path.exists():
+        try:
+            old = pd.read_parquet(manifest_path)
+            records = old.to_dict("records")
+            done_paths = set(old["midi_path"].astype(str).tolist())
+            print(f"[resume] loaded {len(records)} rows from existing manifest, skipping completed paths")
+        except Exception:
+            print("[resume] manifest exists but failed to read; starting fresh")
+
+    if done_paths:
+        # filter jobs/metas to only unfinished
+        new_jobs: List[Tuple[str, str, str]] = []
+        new_metas: List[Tuple[str, str]] = []
+        for (job, meta) in zip(jobs, metas):
+            if job[0] not in done_paths:
+                new_jobs.append(job)
+                new_metas.append(meta)
+        jobs, metas = new_jobs, new_metas
+
+    if len(jobs) == 0:
+        print("[done] nothing to do (everything already tokenized in manifest).")
+        return
+
+    # incremental flush helper
+    def flush_manifest() -> None:
+        dfm = pd.DataFrame(records)
+        _atomic_write_parquet(dfm, manifest_path)
 
     if args.num_workers and args.num_workers > 0:
         # Build metadata map for unordered results
         meta_map = {job[0]: metas[i] for i, job in enumerate(jobs)}  # midi_path -> (genre, split)
 
-        with Pool(processes=args.num_workers) as pool:
+        # IMPORTANT: maxtasksperchild hardening
+        with Pool(processes=args.num_workers, maxtasksperchild=args.maxtasksperchild) as pool:
             it = pool.imap_unordered(partial(_worker_entry, worker_kwargs=worker_kwargs), jobs)
-            for res in tqdm(it, total=len(jobs), desc="Tokenizing (mp)"):
-                genre, split = meta_map.get(res["midi_path"], ("other", "unknown_split"))
-                res.update({"split": split, "genre_final": genre})
-                records.append(res)
+
+            try:
+                for i, res in enumerate(tqdm(it, total=len(jobs), desc="Tokenizing (mp)"), start=1):
+                    genre, split = meta_map.get(res["midi_path"], ("other", "unknown_split"))
+                    res.update({"split": split, "genre_final": genre})
+                    records.append(res)
+
+                    # NEW: incremental flush
+                    if args.flush_every and (i % args.flush_every == 0):
+                        flush_manifest()
+
+            except KeyboardInterrupt:
+                print("\n[interrupt] Caught Ctrl+C. Writing manifest and exiting...")
+                flush_manifest()
+                raise
+
     else:
-        for (midi_path, token_path, genre_token), (genre, split) in tqdm(
-            list(zip(jobs, metas)), total=len(jobs), desc="Tokenizing"
+        for i, ((midi_path, token_path, genre_token), (genre, split)) in enumerate(
+            tqdm(list(zip(jobs, metas)), total=len(jobs), desc="Tokenizing"), start=1
         ):
             res = tokenize_one_file(
                 midi_path=midi_path,
@@ -298,10 +358,14 @@ def main() -> None:
             res.update({"split": split, "genre_final": genre})
             records.append(res)
 
-    manifest = pd.DataFrame(records)
-    manifest_path = out_dir / "manifest.parquet"
-    manifest.to_parquet(manifest_path, index=False)
+            # NEW: incremental flush
+            if args.flush_every and (i % args.flush_every == 0):
+                flush_manifest()
 
+    # final write
+    flush_manifest()
+
+    manifest = pd.DataFrame(records)
     print(f"\nSaved tokenized dataset to: {out_dir.resolve()}")
     print(f"Manifest: {manifest_path.resolve()}")
     print("\nStatus counts:")

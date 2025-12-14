@@ -1,24 +1,30 @@
-data.zip
-prepare_dataset.ipynb
-dataset/
-notebooks/.cache
-__pycache__/
-*.pyc
-logs/
-.vscode/
-.env
-data/tokenized
-# macOS
+# --- OS / editors ---
 .DS_Store
+.vscode/
+.idea/
+.env
 
-# data & artifacts
-data/
-runs/
-out/
-
-# python
+# --- Python ---
 __pycache__/
 *.pyc
-
-# notebooks
+*.pyo
+*.pyd
+*.egg-info/
 .ipynb_checkpoints/
+notebooks/.cache/
+
+# --- Data & artifacts (do not commit) ---
+data/
+dataset/
+runs/
+eval/
+out/
+logs/
+
+# --- Optional: large archives ---
+*.zip
+*.tar.gz
+
+# --- If you create audio previews ---
+*.wav
+*.mp3
