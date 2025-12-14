@@ -14,8 +14,8 @@ __pycache__/
 notebooks/.cache/
 
 # --- Data & artifacts (do not commit) ---
-data/*
-!data/README.md
+artifacts/*
+!artifacts/README.md
 dataset/*
 !dataset/README.md
 runs/

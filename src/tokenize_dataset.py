@@ -200,9 +200,9 @@ def _atomic_write_parquet(df: pd.DataFrame, out_path: Path) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--index", type=str, default="data/index.parquet")
-    ap.add_argument("--splits", type=str, default="data/splits.json")
-    ap.add_argument("--out_dir", type=str, default="data/tokenized")
+    ap.add_argument("--index", type=str, default="artifacts/index.parquet")
+    ap.add_argument("--splits", type=str, default="artifacts/splits.json")
+    ap.add_argument("--out_dir", type=str, default="artifacts/tokenized")
     ap.add_argument("--time_res", type=int, default=8)
     ap.add_argument("--velocity_bins", type=int, default=16)
     ap.add_argument("--max_bar_embedding", type=int, default=1024)

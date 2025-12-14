@@ -199,7 +199,7 @@ def decode_to_midi(
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", type=str, required=True)
-    ap.add_argument("--tokenized_dir", type=str, default="data/tokenized")
+    ap.add_argument("--tokenized_dir", type=str, default="../artifacts/tokenized")
     ap.add_argument("--out", type=str, default="out/generated.mid")
 
     ap.add_argument("--genre", type=str, required=True)

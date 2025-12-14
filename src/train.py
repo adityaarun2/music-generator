@@ -47,7 +47,7 @@ def evaluate(model: GPT, loader: DataLoader, device: torch.device, autocast_ctx)
 def main():
     ap = argparse.ArgumentParser()
 
-    ap.add_argument("--manifest", type=str, default="data/tokenized/manifest.parquet")
+    ap.add_argument("--manifest", type=str, default="artifacts/tokenized/manifest.parquet")
     ap.add_argument("--out_dir", type=str, default="runs/exp1")
 
     ap.add_argument("--seq_len", type=int, default=1024)

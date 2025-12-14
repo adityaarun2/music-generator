@@ -11,8 +11,8 @@ import pandas as pd
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--index", type=str, default="data/index.parquet")
-    ap.add_argument("--out", type=str, default="data/splits.json")
+    ap.add_argument("--index", type=str, default="artifacts/index.parquet")
+    ap.add_argument("--out", type=str, default="artifacts/splits.json")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--val_frac", type=float, default=0.05)
     ap.add_argument("--test_frac", type=float, default=0.05)

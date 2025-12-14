@@ -206,14 +206,14 @@ def main():
     ap = argparse.ArgumentParser()
 
     ap.add_argument("--ckpt", type=str, required=True)
-    ap.add_argument("--tokenized_dir", type=str, default="data/tokenized")
-    ap.add_argument("--manifest", type=str, default="data/tokenized/manifest.parquet")
+    ap.add_argument("--tokenized_dir", type=str, default="../artifacts/tokenized")
+    ap.add_argument("--manifest", type=str, default="../artifacts/tokenized/manifest.parquet")
 
-    ap.add_argument("--index", type=str, default="data/index.parquet")
-    ap.add_argument("--splits", type=str, default="data/splits.json")
+    ap.add_argument("--index", type=str, default="../artifacts/index.parquet")
+    ap.add_argument("--splits", type=str, default="../artifacts/splits.json")
 
     ap.add_argument("--out_dir", type=str, default="eval")
-    ap.add_argument("--genres", type=str, default="data/tokenized/genres.json")
+    ap.add_argument("--genres", type=str, default="../artifacts/tokenized/genres.json")
 
     ap.add_argument("--seq_len", type=int, default=1024)
     ap.add_argument("--batch_size", type=int, default=32)
