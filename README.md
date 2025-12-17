@@ -13,7 +13,7 @@ It implements a **full research-grade pipeline**:
 
 ## Dataset
 
-This project uses the **Lakh MIDI Dataset v0.1 (Clean MIDI subset)**.
+This project uses the **Lakh MIDI Dataset v0.1 (Clean MIDI subset)**, consisting of approximately 14,000 MIDI files, organized by artist name and annotated with genre labels.
 
 **Source:** http://colinraffel.com/projects/lmd/
 
